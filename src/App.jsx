@@ -202,102 +202,103 @@ function App() {
     if (!selection.startDate) {
       setSelection(prev => ({ ...prev, startDate: date }));
     } else {
-      // Complete selection
-      const start = selection.startDate < date ? selection.startDate : date;
-      const end = selection.startDate < date ? date : selection.startDate;
+      try {
+        // Complete selection
+        const start = selection.startDate < date ? selection.startDate : date;
+        const end = selection.startDate < date ? date : selection.startDate;
 
-      const updates = [];
-      const deletions = [];
-      const insertions = [];
+        const updates = [];
+        const deletions = [];
+        const insertions = [];
 
-      // Helper to normalize date (00:00:00)
-      const normalize = (d) => {
-        const date = new Date(d);
-        date.setHours(0, 0, 0, 0);
-        return date;
-      };
+        // Helper to normalize date (00:00:00)
+        const normalize = (d) => {
+          const date = new Date(d);
+          date.setHours(0, 0, 0, 0);
+          return date;
+        };
 
-      const rangeStart = normalize(start);
-      const rangeEnd = normalize(end);
+        const rangeStart = normalize(start);
+        const rangeEnd = normalize(end);
 
-      userSchedules?.forEach(s => {
-        const sStart = normalize(s.start_date);
-        const sEnd = normalize(s.end_date);
+        userSchedules?.forEach(s => {
+          const sStart = normalize(s.start_date);
+          const sEnd = normalize(s.end_date);
 
-        // Check if this schedule overlaps with the delete range
-        if (sStart <= rangeEnd && sEnd >= rangeStart) {
-          // Case 1: Delete range covers the entire schedule
-          if (rangeStart <= sStart && rangeEnd >= sEnd) {
-            deletions.push(s.id);
+          // Check if this schedule overlaps with the delete range
+          if (sStart <= rangeEnd && sEnd >= rangeStart) {
+            // Case 1: Delete range covers the entire schedule
+            if (rangeStart <= sStart && rangeEnd >= sEnd) {
+              deletions.push(s.id);
+            }
+            // Case 2: Delete range covers the start of the schedule
+            // (Delete: 10-15, Schedule: 10-18) -> New Start: 16
+            else if (rangeStart <= sStart && rangeEnd < sEnd) {
+              const newStart = new Date(rangeEnd);
+              newStart.setDate(newStart.getDate() + 1);
+              updates.push({ id: s.id, start_date: newStart.toISOString() });
+            }
+            // Case 3: Delete range covers the end of the schedule
+            // (Delete: 15-18, Schedule: 10-18) -> New End: 14
+            else if (rangeStart > sStart && rangeEnd >= sEnd) {
+              const newEnd = new Date(rangeStart);
+              newEnd.setDate(newEnd.getDate() - 1);
+              updates.push({ id: s.id, end_date: newEnd.toISOString() });
+            }
+            // Case 4: Delete range is in the middle (Split)
+            // (Delete: 12-14, Schedule: 10-18) -> 10-11 AND 15-18
+            else if (rangeStart > sStart && rangeEnd < sEnd) {
+              // 1. Update original to end at rangeStart - 1
+              const firstPartEnd = new Date(rangeStart);
+              firstPartEnd.setDate(firstPartEnd.getDate() - 1);
+              updates.push({ id: s.id, end_date: firstPartEnd.toISOString() });
+
+              // 2. Insert new schedule starting at rangeEnd + 1
+              const secondPartStart = new Date(rangeEnd);
+              secondPartStart.setDate(secondPartStart.getDate() + 1);
+
+              insertions.push({
+                user_id: s.user_id,
+                user_name: s.user_name,
+                start_date: secondPartStart.toISOString(),
+                end_date: s.end_date // Keep original end
+              });
+            }
           }
-          // Case 2: Delete range covers the start of the schedule
-          // (Delete: 10-15, Schedule: 10-18) -> New Start: 16
-          else if (rangeStart <= sStart && rangeEnd < sEnd) {
-            const newStart = new Date(rangeEnd);
-            newStart.setDate(newStart.getDate() + 1);
-            updates.push({ id: s.id, start_date: newStart.toISOString() });
-          }
-          // Case 3: Delete range covers the end of the schedule
-          // (Delete: 15-18, Schedule: 10-18) -> New End: 14
-          else if (rangeStart > sStart && rangeEnd >= sEnd) {
-            const newEnd = new Date(rangeStart);
-            newEnd.setDate(newEnd.getDate() - 1);
-            updates.push({ id: s.id, end_date: newEnd.toISOString() });
-          }
-          // Case 4: Delete range is in the middle (Split)
-          // (Delete: 12-14, Schedule: 10-18) -> 10-11 AND 15-18
-          else if (rangeStart > sStart && rangeEnd < sEnd) {
-            // 1. Update original to end at rangeStart - 1
-            const firstPartEnd = new Date(rangeStart);
-            firstPartEnd.setDate(firstPartEnd.getDate() - 1);
-            updates.push({ id: s.id, end_date: firstPartEnd.toISOString() });
+        });
 
-            // 2. Insert new schedule starting at rangeEnd + 1
-            const secondPartStart = new Date(rangeEnd);
-            secondPartStart.setDate(secondPartStart.getDate() + 1);
-
-            insertions.push({
-              user_id: s.user_id,
-              user_name: s.user_name,
-              start_date: secondPartStart.toISOString(),
-              end_date: s.end_date // Keep original end
-            });
-          }
+        // Execute operations
+        if (deletions.length > 0) {
+          await supabase.from('schedules').delete().in('id', deletions);
         }
-      });
 
-      // Execute operations
-      if (deletions.length > 0) {
-        await supabase.from('schedules').delete().in('id', deletions);
-      }
+        for (const update of updates) {
+          await supabase.from('schedules').update(update).eq('id', update.id);
+        }
 
-      for (const update of updates) {
-        await supabase.from('schedules').update(update).eq('id', update.id);
-      }
+        if (insertions.length > 0) {
+          await supabase.from('schedules').insert(insertions);
+        }
 
-      if (insertions.length > 0) {
-        await supabase.from('schedules').insert(insertions);
-      }
-
-      if (!isSilent) {
         if (deletions.length === 0 && updates.length === 0 && insertions.length === 0) {
           alert('삭제할 일정이 없습니다.');
         } else {
           alert('삭제(및 수정)되었습니다.');
         }
+
+      } catch (e) {
+        console.error(e);
+        alert('오류가 발생했습니다: ' + e.message);
       }
-    } catch (e) {
-      console.error(e);
-      alert('오류가 발생했습니다: ' + e.message);
+
+      // Reset
+      setSelection({ isActive: false, user: null, startDate: null });
+      setMode('VIEW');
+
+      // Refresh
+      const { data } = await supabase.from('schedules').select('*');
+      if (data) setSchedules(data);
     }
-
-    // Reset
-    setSelection({ isActive: false, user: null, startDate: null });
-    setMode('VIEW');
-
-    // Refresh
-    const { data } = await supabase.from('schedules').select('*');
-    if (data) setSchedules(data);
   };
 
   const cancelSelection = () => {
