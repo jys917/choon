@@ -304,8 +304,7 @@ function App() {
   // Refresh
   const { data } = await supabase.from('schedules').select('*');
   if (data) setSchedules(data);
-}
-  };
+};
 
 const cancelSelection = () => {
   setSelection({ isActive: false, user: null, startDate: null });
