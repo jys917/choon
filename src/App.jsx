@@ -138,7 +138,7 @@ function App() {
               user_name: s.user_name,
               start_date: secondPartStart.toISOString(),
               end_date: s.end_date,
-              details: s.details // Preserve details
+              details: s.details
             });
           }
         }
@@ -148,7 +148,7 @@ function App() {
       for (const update of updates) await supabase.from('schedules').update(update).eq('id', update.id);
       if (insertions.length > 0) await supabase.from('schedules').insert(insertions);
 
-      if (!silent) {
+      if (!isSilent) {
         if (deletions.length === 0 && updates.length === 0 && insertions.length === 0) {
           alert('삭제할 일정이 없습니다.');
         } else {
@@ -162,8 +162,8 @@ function App() {
 
     } catch (e) {
       console.error(e);
-      if (!silent) alert('오류가 발생했습니다: ' + e.message);
-      throw e; // Re-throw to propagate error if needed
+      if (!isSilent) alert('오류가 발생했습니다: ' + e.message);
+      throw e;
     }
   };
 
