@@ -364,76 +364,77 @@ function App() {
         const { data } = await supabase.from('schedules').select('*');
         if (data) setSchedules(data);
       }
-    };
-
-    const cancelSelection = () => {
-      setSelection({ isActive: false, user: null, startDate: null });
-      setMode('VIEW');
-    };
-
-    return (
-      <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">
-        <Header
-          onOpenWhoIsHere={handleOpenWhoIsHere}
-          onOpenAddSchedule={handleOpenAddSchedule}
-          onOpenDeleteSchedule={handleOpenDeleteSchedule}
-          isDarkMode={isDarkMode}
-          toggleTheme={toggleTheme}
-        />
-
-        {selection.isActive && (
-          <div className={clsx(
-            "px-4 py-3 text-center text-sm font-medium animate-in slide-in-from-top sticky top-20 z-40 shadow-lg mx-4 rounded-xl flex justify-between items-center backdrop-blur-md",
-            mode === 'ADD' ? "bg-blue-600/90 text-white" : "bg-red-600/90 text-white"
-          )}>
-            <span>
-              {selection.startDate
-                ? "마지막 날짜를 선택해주세요"
-                : `${selection.user.name}님의 ${mode === 'ADD' ? '휴가 시작일' : '삭제할 기간의 시작일'}을 선택해주세요`}
-            </span>
-            <button
-              onClick={cancelSelection}
-              className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
-            >
-              취소
-            </button>
-          </div>
-        )}
-
-        <main className="flex-1 overflow-hidden flex flex-col">
-          <CalendarView
-            schedules={schedules}
-            onDateClick={handleDateClick}
-            selectionMode={selection}
-          />
-        </main>
-
-        <UserSelectionModal
-          isOpen={isUserModalOpen}
-          onClose={() => setIsUserModalOpen(false)}
-          onSelectUser={handleSelectUser}
-        />
-
-        <WhoIsHereModal
-          isOpen={isWhoIsHereOpen}
-          onClose={() => setIsWhoIsHereOpen(false)}
-          schedules={schedules}
-        />
-
-        <DetailInputModal
-          isOpen={isDetailModalOpen}
-          onClose={() => {
-            setIsDetailModalOpen(false);
-            setPendingSelection(null);
-            setMode('VIEW');
-          }}
-          onConfirm={handleDetailConfirm}
-          user={pendingSelection?.user}
-          startDate={pendingSelection?.start}
-          endDate={pendingSelection?.end}
-        />
-      </div>
-    );
+    }
   };
 
-  export default App;
+  const cancelSelection = () => {
+    setSelection({ isActive: false, user: null, startDate: null });
+    setMode('VIEW');
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans">
+      <Header
+        onOpenWhoIsHere={handleOpenWhoIsHere}
+        onOpenAddSchedule={handleOpenAddSchedule}
+        onOpenDeleteSchedule={handleOpenDeleteSchedule}
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
+      />
+
+      {selection.isActive && (
+        <div className={clsx(
+          "px-4 py-3 text-center text-sm font-medium animate-in slide-in-from-top sticky top-20 z-40 shadow-lg mx-4 rounded-xl flex justify-between items-center backdrop-blur-md",
+          mode === 'ADD' ? "bg-blue-600/90 text-white" : "bg-red-600/90 text-white"
+        )}>
+          <span>
+            {selection.startDate
+              ? "마지막 날짜를 선택해주세요"
+              : `${selection.user.name}님의 ${mode === 'ADD' ? '휴가 시작일' : '삭제할 기간의 시작일'}을 선택해주세요`}
+          </span>
+          <button
+            onClick={cancelSelection}
+            className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
+          >
+            취소
+          </button>
+        </div>
+      )}
+
+      <main className="flex-1 overflow-hidden flex flex-col">
+        <CalendarView
+          schedules={schedules}
+          onDateClick={handleDateClick}
+          selectionMode={selection}
+        />
+      </main>
+
+      <UserSelectionModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onSelectUser={handleSelectUser}
+      />
+
+      <WhoIsHereModal
+        isOpen={isWhoIsHereOpen}
+        onClose={() => setIsWhoIsHereOpen(false)}
+        schedules={schedules}
+      />
+
+      <DetailInputModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setPendingSelection(null);
+          setMode('VIEW');
+        }}
+        onConfirm={handleDetailConfirm}
+        user={pendingSelection?.user}
+        startDate={pendingSelection?.start}
+        endDate={pendingSelection?.end}
+      />
+    </div>
+  );
+};
+
+export default App;
