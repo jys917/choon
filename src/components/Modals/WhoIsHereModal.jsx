@@ -38,17 +38,17 @@ export function WhoIsHereModal({ isOpen, onClose, schedules }) {
         // Let's show unique users.
         const uniqueUsers = new Map();
         schedules.forEach(schedule => {
-            const sStart = new Date(schedule.startDate);
-            const sEnd = new Date(schedule.endDate);
+            const sStart = new Date(schedule.start_date);
+            const sEnd = new Date(schedule.end_date);
             sStart.setHours(0, 0, 0, 0);
             sEnd.setHours(0, 0, 0, 0);
 
             if (sStart <= end && sEnd >= start) {
-                if (!uniqueUsers.has(schedule.userId)) {
-                    uniqueUsers.set(schedule.userId, {
-                        id: schedule.userId,
-                        name: schedule.userName,
-                        color: USER_COLORS[schedule.userId]
+                if (!uniqueUsers.has(schedule.user_id)) {
+                    uniqueUsers.set(schedule.user_id, {
+                        id: schedule.user_id,
+                        name: schedule.user_name,
+                        color: USER_COLORS[schedule.user_id]
                     });
                 }
             }
