@@ -16,7 +16,7 @@ export function CalendarView({ schedules, onDateClick, selectionMode }) {
 
     // Calculate layout whenever schedules change
     // We memoize this to avoid expensive recalculations on every render if schedules haven't changed
-    const scheduleLayout = React.useMemo(() => calculateScheduleLayout(schedules), [schedules]);
+    const scheduleLayout = React.useMemo(() => calculateScheduleLayout(schedules || []), [schedules]);
 
     const loaderRef = useRef(null);
 
