@@ -17,8 +17,8 @@ export function Month({ date, schedules, onDateClick, selectionMode }) {
     const getSchedulesForDay = (dayDate) => {
         if (!dayDate) return [];
         return schedules.filter(s => {
-            const start = new Date(s.startDate);
-            const end = new Date(s.endDate);
+            const start = new Date(s.start_date);
+            const end = new Date(s.end_date);
             // Reset hours to compare dates only
             start.setHours(0, 0, 0, 0);
             end.setHours(0, 0, 0, 0);
