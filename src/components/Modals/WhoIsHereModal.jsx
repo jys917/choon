@@ -10,10 +10,10 @@ export function WhoIsHereModal({ isOpen, onClose, schedules }) {
     const [endDate, setEndDate] = useState('');
 
     const presentUsers = useMemo(() => {
-        if (!startDate || !endDate) return [];
+        if (!startDate) return [];
 
         const start = new Date(startDate);
-        const end = new Date(endDate);
+        const end = endDate ? new Date(endDate) : new Date(startDate);
 
         // Reset hours
         start.setHours(0, 0, 0, 0);
@@ -92,7 +92,7 @@ export function WhoIsHereModal({ isOpen, onClose, schedules }) {
                     </div>
 
                     <div className="min-h-[150px] bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-                        {!startDate || !endDate ? (
+                        {!startDate ? (
                             <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2">
                                 <Search size={24} />
                                 <span className="text-sm">날짜를 선택해주세요</span>
