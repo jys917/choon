@@ -88,83 +88,76 @@ function App() {
   };
 
   const handleDelete = async (user, start, end, isSilent = false) => {
-    try {
-      const { data: userSchedules } = await supabase
-        .from('schedules')
-        .select('*')
-        .eq('user_id', user.id);
+    const { data: userSchedules } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('user_id', user.id);
 
-      const updates = [];
-      const deletions = [];
-      const insertions = [];
+    const updates = [];
+    const deletions = [];
+    const insertions = [];
 
-      const normalize = (d) => {
-        const date = new Date(d);
-        date.setHours(0, 0, 0, 0);
-        return date;
-      };
+    const normalize = (d) => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
 
-      const rangeStart = normalize(start);
-      const rangeEnd = normalize(end);
+    const rangeStart = normalize(start);
+    const rangeEnd = normalize(end);
 
-      userSchedules?.forEach(s => {
-        const sStart = normalize(s.start_date);
-        const sEnd = normalize(s.end_date);
+    userSchedules?.forEach(s => {
+      const sStart = normalize(s.start_date);
+      const sEnd = normalize(s.end_date);
 
-        if (sStart <= rangeEnd && sEnd >= rangeStart) {
-          if (rangeStart <= sStart && rangeEnd >= sEnd) {
-            deletions.push(s.id);
-          }
-          else if (rangeStart <= sStart && rangeEnd < sEnd) {
-            const newStart = new Date(rangeEnd);
-            newStart.setDate(newStart.getDate() + 1);
-            updates.push({ id: s.id, start_date: newStart.toISOString() });
-          }
-          else if (rangeStart > sStart && rangeEnd >= sEnd) {
-            const newEnd = new Date(rangeStart);
-            newEnd.setDate(newEnd.getDate() - 1);
-            updates.push({ id: s.id, end_date: newEnd.toISOString() });
-          }
-          else if (rangeStart > sStart && rangeEnd < sEnd) {
-            const firstPartEnd = new Date(rangeStart);
-            firstPartEnd.setDate(firstPartEnd.getDate() - 1);
-            updates.push({ id: s.id, end_date: firstPartEnd.toISOString() });
-
-            const secondPartStart = new Date(rangeEnd);
-            secondPartStart.setDate(secondPartStart.getDate() + 1);
-
-            insertions.push({
-              user_id: s.user_id,
-              user_name: s.user_name,
-              start_date: secondPartStart.toISOString(),
-              end_date: s.end_date,
-              details: s.details
-            });
-          }
+      if (sStart <= rangeEnd && sEnd >= rangeStart) {
+        if (rangeStart <= sStart && rangeEnd >= sEnd) {
+          deletions.push(s.id);
         }
-      });
+        else if (rangeStart <= sStart && rangeEnd < sEnd) {
+          const newStart = new Date(rangeEnd);
+          newStart.setDate(newStart.getDate() + 1);
+          updates.push({ id: s.id, start_date: newStart.toISOString() });
+        }
+        else if (rangeStart > sStart && rangeEnd >= sEnd) {
+          const newEnd = new Date(rangeStart);
+          newEnd.setDate(newEnd.getDate() - 1);
+          updates.push({ id: s.id, end_date: newEnd.toISOString() });
+        }
+        else if (rangeStart > sStart && rangeEnd < sEnd) {
+          const firstPartEnd = new Date(rangeStart);
+          firstPartEnd.setDate(firstPartEnd.getDate() - 1);
+          updates.push({ id: s.id, end_date: firstPartEnd.toISOString() });
 
-      if (deletions.length > 0) await supabase.from('schedules').delete().in('id', deletions);
-      for (const update of updates) await supabase.from('schedules').update(update).eq('id', update.id);
-      if (insertions.length > 0) await supabase.from('schedules').insert(insertions);
+          const secondPartStart = new Date(rangeEnd);
+          secondPartStart.setDate(secondPartStart.getDate() + 1);
 
-      if (!isSilent) {
-        if (deletions.length === 0 && updates.length === 0 && insertions.length === 0) {
-          alert('삭제할 일정이 없습니다.');
-        } else {
-          alert('삭제(및 수정)되었습니다.');
+          insertions.push({
+            user_id: s.user_id,
+            user_name: s.user_name,
+            start_date: secondPartStart.toISOString(),
+            end_date: s.end_date,
+            details: s.details
+          });
         }
       }
+    });
 
-      // Refresh
-      const { data } = await supabase.from('schedules').select('*');
-      if (data) setSchedules(data);
+    if (deletions.length > 0) await supabase.from('schedules').delete().in('id', deletions);
+    for (const update of updates) await supabase.from('schedules').update(update).eq('id', update.id);
+    if (insertions.length > 0) await supabase.from('schedules').insert(insertions);
 
-    } catch (e) {
-      console.error(e);
-      if (!isSilent) alert('오류가 발생했습니다: ' + e.message);
-      throw e;
+    if (!isSilent) {
+      if (deletions.length === 0 && updates.length === 0 && insertions.length === 0) {
+        alert('삭제할 일정이 없습니다.');
+      } else {
+        alert('삭제(및 수정)되었습니다.');
+      }
     }
+
+    // Refresh
+    const { data } = await supabase.from('schedules').select('*');
+    if (data) setSchedules(data);
   };
 
   const handleDetailConfirm = async (details) => {
