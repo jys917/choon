@@ -22,10 +22,8 @@ function ScheduleBar({ schedule, isStart, isEnd, isStartOfWeek }) {
                 "h-6 flex items-center text-[11px] font-bold shadow-sm relative group transition-all",
                 USER_COLORS[schedule.user_id] || 'bg-gray-400',
                 USER_TEXT_COLORS[schedule.user_id] || 'text-white',
-                // Rounding logic
-                isStart ? "rounded-l-md pl-1" : "rounded-l-none ml-[-6px] border-l-0",
-                isEnd ? "rounded-r-md pr-1" : "rounded-r-none mr-[-6px] border-r-0",
-                // Z-index to ensure expanded item is on top
+                isStart ? "rounded-l-md pl-1" : "rounded-l-none border-l-0",
+                isEnd ? "rounded-r-md pr-1" : "rounded-r-none border-r-0",
                 isExpanded ? "z-50" : "z-0"
             )}
             title={displayText}
@@ -47,7 +45,6 @@ function ScheduleBar({ schedule, isStart, isEnd, isStartOfWeek }) {
                 </div>
             )}
 
-            {/* Expanded View (Popup) */}
             {isExpanded && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 text-xs font-normal whitespace-normal text-left">
                     <div className="font-bold mb-1">{schedule.user_name}</div>
@@ -81,14 +78,14 @@ export function Day({ date, schedules = [], onDateClick, selectionMode }) {
         <div
             onClick={handleClick}
             className={clsx(
-                "min-h-[120px] p-1 relative flex flex-col transition-all duration-200 rounded-2xl m-0.5 group",
+                "min-h-[120px] relative flex flex-col transition-all duration-200 group border-b border-r border-gray-100 dark:border-gray-800",
                 isDateToday && "bg-black/5 dark:bg-white/10",
                 !isDateToday && "hover:bg-gray-50 dark:hover:bg-gray-800",
                 isSelectionActive && "cursor-pointer active:scale-95",
                 isSelectedStart && "bg-black text-white dark:bg-white dark:text-black ring-4 ring-black/20 dark:ring-white/20 z-10 shadow-xl"
             )}
         >
-            <div className="flex justify-between items-start mb-1 px-1">
+            <div className="flex justify-between items-start p-1">
                 <span className={clsx(
                     "text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full",
                     isDateToday && !isSelectedStart ? "bg-black text-white dark:bg-white dark:text-black" :

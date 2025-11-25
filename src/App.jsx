@@ -166,15 +166,63 @@ function App() {
     const { user, start, end } = pendingSelection;
 
     try {
-      // Step 1: Clear the space (Delete/Resize existing schedules to make room)
-      // We will "Delete" the range first to clear it. We need to silently delete.
-      await handleDelete(user, start, end, true);
-      // Step 2: Insert new schedule
+      // Fetch existing schedules for this user to check for overlaps/merges
+      const { data: existing } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('user_id', user.id);
+
+      const normalize = (d) => {
+        const date = new Date(d);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      };
+
+      const newStart = normalize(start);
+      const newEnd = normalize(end);
+
+      // Find overlapping or adjacent schedules to merge
+      const overlapping = existing?.filter(s => {
+        const sStart = normalize(s.start_date);
+        const sEnd = normalize(s.end_date);
+
+        // Check overlap
+        const isOverlapping = sStart <= newEnd && sEnd >= newStart;
+
+        // Check adjacency (optional, but good for merging continuous blocks)
+        const oneDay = 24 * 60 * 60 * 1000;
+        const isAdjacentLeft = sEnd.getTime() + oneDay === newStart.getTime();
+        const isAdjacentRight = newEnd.getTime() + oneDay === sStart.getTime();
+
+        return isOverlapping || isAdjacentLeft || isAdjacentRight;
+      }) || [];
+
+      let finalStart = newStart;
+      let finalEnd = newEnd;
+      const idsToDelete = [];
+
+      if (overlapping.length > 0) {
+        // Calculate union range
+        const allStarts = [newStart, ...overlapping.map(s => normalize(s.start_date))];
+        const allEnds = [newEnd, ...overlapping.map(s => normalize(s.end_date))];
+
+        finalStart = new Date(Math.min(...allStarts));
+        finalEnd = new Date(Math.max(...allEnds));
+
+        idsToDelete.push(...overlapping.map(s => s.id));
+      }
+
+      // Step 1: Delete overlapping schedules
+      if (idsToDelete.length > 0) {
+        await supabase.from('schedules').delete().in('id', idsToDelete);
+      }
+
+      // Step 2: Insert new merged schedule
       const payload = {
         user_id: user.id,
         user_name: user.name,
-        start_date: start.toISOString(),
-        end_date: end.toISOString(),
+        start_date: finalStart.toISOString(),
+        end_date: finalEnd.toISOString(),
         details: details
       };
 
@@ -203,6 +251,12 @@ function App() {
       setSelection(prev => ({ ...prev, startDate: date }));
     } else {
       try {
+        // Fetch user schedules for the current selection user
+        const { data: userSchedules } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('user_id', selection.user.id);
+
         // Complete selection
         const start = selection.startDate < date ? selection.startDate : date;
         const end = selection.startDate < date ? date : selection.startDate;
