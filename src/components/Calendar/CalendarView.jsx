@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { addMonths, startOfMonth } from 'date-fns';
 import { Month } from './Month';
 
+import { calculateScheduleLayout } from '../../utils/layout';
+
 export function CalendarView({ schedules, onDateClick, selectionMode }) {
     const [months, setMonths] = useState(() => {
         const current = startOfMonth(new Date());
@@ -11,6 +13,10 @@ export function CalendarView({ schedules, onDateClick, selectionMode }) {
             addMonths(current, 2),
         ];
     });
+
+    // Calculate layout whenever schedules change
+    // We memoize this to avoid expensive recalculations on every render if schedules haven't changed
+    const scheduleLayout = React.useMemo(() => calculateScheduleLayout(schedules), [schedules]);
 
     const loaderRef = useRef(null);
 
@@ -52,6 +58,7 @@ export function CalendarView({ schedules, onDateClick, selectionMode }) {
                         key={date.toISOString()}
                         date={date}
                         schedules={schedules}
+                        scheduleLayout={scheduleLayout}
                         onDateClick={onDateClick}
                         selectionMode={selectionMode}
                     />
