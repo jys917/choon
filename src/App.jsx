@@ -83,7 +83,7 @@ function App() {
       isActive: true,
       user: user,
       startDate: null,
-    }));
+    });
     setIsUserModalOpen(false);
   };
 
