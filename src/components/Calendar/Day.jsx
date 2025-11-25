@@ -68,63 +68,9 @@ export function Day({ date, schedules = [], onDateClick, selectionMode }) {
     const isSelectionActive = selectionMode?.isActive;
     const isSelectedStart = isSelectionActive && selectionMode.startDate && isSameDay(date, selectionMode.startDate);
 
-    const handleClick = () => {
-        if (onDateClick) {
-            onDateClick(date);
-        }
-    };
-
-    return (
-        <div
-            onClick={handleClick}
-            className={clsx(
-                "min-h-[120px] relative flex flex-col transition-all duration-200 group border-b border-r border-gray-100 dark:border-gray-800",
-                isDateToday && "bg-black/5 dark:bg-white/10",
-                !isDateToday && "hover:bg-gray-50 dark:hover:bg-gray-800",
-                isSelectionActive && "cursor-pointer active:scale-95",
-                isSelectedStart && "bg-black text-white dark:bg-white dark:text-black ring-4 ring-black/20 dark:ring-white/20 z-10 shadow-xl"
-            )}
-        >
-            <div className="flex justify-between items-start p-1">
-                <span className={clsx(
-                    "text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full",
-                    isDateToday && !isSelectedStart ? "bg-black text-white dark:bg-white dark:text-black" :
-                        isSelectedStart ? "text-current" :
-                            isRedDay ? "text-red-500" :
-                                isSaturday ? "text-blue-500" : "text-gray-900 dark:text-gray-100"
-                )}>
-                    {dayNumber}
-                </span>
-            </div>
-
-            <div className="flex flex-col gap-1 flex-1">
-                {/* Holiday Text (First in list) */}
-                {holidayName && (
-                    <div className="text-[10px] text-red-500 font-bold px-1 truncate">
-                        {holidayName}
-                    </div>
-                )}
-
-                {schedules.map((schedule) => {
-                    const sStart = new Date(schedule.start_date);
-                    const sEnd = new Date(schedule.end_date);
-                    sStart.setHours(0, 0, 0, 0);
-                    sEnd.setHours(0, 0, 0, 0);
-
-                    const isStart = isSameDay(date, sStart);
-                    const isEnd = isSameDay(date, sEnd);
-
-                    return (
-                        <ScheduleBar
-                            key={schedule.id}
-                            schedule={schedule}
-                            isStart={isStart}
-                            isEnd={isEnd}
-                            isStartOfWeek={isSunday}
-                        />
                     );
-                })}
-            </div>
-        </div>
+})}
+            </div >
+        </div >
     );
 }
