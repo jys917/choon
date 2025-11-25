@@ -132,33 +132,89 @@ function App() {
           if (error) throw error;
 
         } else if (mode === 'DELETE') {
-          // Delete logic: Delete schedules for this user that overlap with the range
-          // Supabase doesn't support complex "delete if overlap" in one go easily without RPC.
-          // So we fetch, filter, then delete by ID.
-
+          // Fetch user schedules
           const { data: userSchedules } = await supabase
             .from('schedules')
             .select('*')
             .eq('user_id', selection.user.id);
 
-          const toDelete = userSchedules?.filter(s => {
-            const sStart = new Date(s.start_date);
-            const sEnd = new Date(s.end_date);
-            sStart.setHours(0, 0, 0, 0);
-            sEnd.setHours(0, 0, 0, 0);
-            return sStart <= end && sEnd >= start;
-          }).map(s => s.id);
+          const updates = [];
+          const deletions = [];
+          const insertions = [];
 
-          if (toDelete?.length > 0) {
-            const { error } = await supabase
-              .from('schedules')
-              .delete()
-              .in('id', toDelete);
+          // Helper to normalize date (00:00:00)
+          const normalize = (d) => {
+            const date = new Date(d);
+            date.setHours(0, 0, 0, 0);
+            return date;
+          };
 
-            if (error) throw error;
-            alert('삭제되었습니다.');
-          } else {
+          const rangeStart = normalize(start);
+          const rangeEnd = normalize(end);
+
+          userSchedules?.forEach(s => {
+            const sStart = normalize(s.start_date);
+            const sEnd = normalize(s.end_date);
+
+            // Check if this schedule overlaps with the delete range
+            if (sStart <= rangeEnd && sEnd >= rangeStart) {
+              // Case 1: Delete range covers the entire schedule
+              if (rangeStart <= sStart && rangeEnd >= sEnd) {
+                deletions.push(s.id);
+              }
+              // Case 2: Delete range covers the start of the schedule
+              // (Delete: 10-15, Schedule: 10-18) -> New Start: 16
+              else if (rangeStart <= sStart && rangeEnd < sEnd) {
+                const newStart = new Date(rangeEnd);
+                newStart.setDate(newStart.getDate() + 1);
+                updates.push({ id: s.id, start_date: newStart.toISOString() });
+              }
+              // Case 3: Delete range covers the end of the schedule
+              // (Delete: 15-18, Schedule: 10-18) -> New End: 14
+              else if (rangeStart > sStart && rangeEnd >= sEnd) {
+                const newEnd = new Date(rangeStart);
+                newEnd.setDate(newEnd.getDate() - 1);
+                updates.push({ id: s.id, end_date: newEnd.toISOString() });
+              }
+              // Case 4: Delete range is in the middle (Split)
+              // (Delete: 12-14, Schedule: 10-18) -> 10-11 AND 15-18
+              else if (rangeStart > sStart && rangeEnd < sEnd) {
+                // 1. Update original to end at rangeStart - 1
+                const firstPartEnd = new Date(rangeStart);
+                firstPartEnd.setDate(firstPartEnd.getDate() - 1);
+                updates.push({ id: s.id, end_date: firstPartEnd.toISOString() });
+
+                // 2. Insert new schedule starting at rangeEnd + 1
+                const secondPartStart = new Date(rangeEnd);
+                secondPartStart.setDate(secondPartStart.getDate() + 1);
+
+                insertions.push({
+                  user_id: s.user_id,
+                  user_name: s.user_name,
+                  start_date: secondPartStart.toISOString(),
+                  end_date: s.end_date // Keep original end
+                });
+              }
+            }
+          });
+
+          // Execute operations
+          if (deletions.length > 0) {
+            await supabase.from('schedules').delete().in('id', deletions);
+          }
+
+          for (const update of updates) {
+            await supabase.from('schedules').update(update).eq('id', update.id);
+          }
+
+          if (insertions.length > 0) {
+            await supabase.from('schedules').insert(insertions);
+          }
+
+          if (deletions.length === 0 && updates.length === 0 && insertions.length === 0) {
             alert('삭제할 일정이 없습니다.');
+          } else {
+            alert('삭제(및 수정)되었습니다.');
           }
         }
       } catch (e) {
